@@ -145,7 +145,7 @@ jobs:
 
       - name: Run sync script
         env:
-	 	  TCGCOLLECTOR_USER_ID: ${{ secrets.TCGCOLLECTOR_USER_ID }}
+          TCGCOLLECTOR_USER_ID: ${{ secrets.TCGCOLLECTOR_USER_ID }}
           MONARCH_SESSION_B64: ${{ secrets.MONARCH_SESSION_B64 }}
           MONARCH_ACCOUNT_ID: ${{ secrets.MONARCH_ACCOUNT_ID }}
         run: |
