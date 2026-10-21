@@ -1,0 +1,3 @@
+monarchmoney
+requests
+python-dotenv
