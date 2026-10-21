@@ -85,8 +85,18 @@ async def update_monarch_balance(new_balance: float):
 
 
 async def main():
-    if not MONARCH_SESSION_B64 or not MONARCH_ACCOUNT_ID:
-        raise ValueError("Missing MONARCH_SESSION_B64 or MONARCH_ACCOUNT_ID environment variables.")
+    required_environment_variables = {
+        "TCGCOLLECTOR_USER_ID": TCGCOLLECTOR_USER_ID,
+        "MONARCH_SESSION_B64": MONARCH_SESSION_B64,
+        "MONARCH_ACCOUNT_ID": MONARCH_ACCOUNT_ID,
+    }
+    missing_variables = [
+        name for name, value in required_environment_variables.items() if not value
+    ]
+    if missing_variables:
+        raise ValueError(
+            f"Missing required environment variables: {', '.join(missing_variables)}"
+        )
 
     val = get_tcgcollector_portfolio_value(PUBLIC_TCG_URL)
     print(f"Found TCG Collector valuation: ${val:,.2f}")
