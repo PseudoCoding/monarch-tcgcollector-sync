@@ -76,10 +76,11 @@ async def update_monarch_balance(new_balance: float):
     if os.path.exists("temp_session.pickle"):
         os.remove("temp_session.pickle")
 
-    await mm.update_account_balance(
-        account_id=MONARCH_ACCOUNT_ID,
-        balance=new_balance,
-    )
+    await mm.update_account(
+		account_id=MONARCH_ACCOUNT_ID,
+		account_balance=new_balance
+	)
+    
     print(f"Successfully updated Monarch account {MONARCH_ACCOUNT_ID} to ${new_balance:,.2f}")
 
 
