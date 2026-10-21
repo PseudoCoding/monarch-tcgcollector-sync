@@ -34,7 +34,7 @@ An automated pipeline that scrapes your Pokémon card collection valuation from 
 1. **Monarch Money Account:** Create a manual account under **Accounts → + Add Account → Manual Account**. Set the category to **Asset → Collectibles** (e.g., `Pokémon Cards`).
 2. **Monarch Account UUID:** Open your manual account in a desktop browser. Copy the UUID from the URL:
 `[https://app.monarchmoney.com/accounts/](https://app.monarchmoney.com/accounts/)<ACCOUNT_ID>`
-3. **TCG Collector Public Dashboard:** Ensure your collection is visible publicly (or accessible via your user ID link: `[https://www.tcgcollector.com/dashboard/intl?viewUser=](https://www.tcgcollector.com/dashboard/intl?viewUser=)<USER_ID>`).
+3. **TCG Collector Public Dashboard:** Ensure your collection is visible publicly via **Share my collection → Copy link** (or accessible via your user ID link: `[https://www.tcgcollector.com/dashboard/intl?viewUser=](https://www.tcgcollector.com/dashboard/intl?viewUser=)<USER_ID>`).
 
 ---
 
