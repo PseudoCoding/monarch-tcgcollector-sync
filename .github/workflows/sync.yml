@@ -28,8 +28,7 @@ jobs:
       - name: Run sync script
         env:
           TCGCOLLECTOR_USER: ${{ secrets.TCGCOLLECTOR_USER }}
-          MONARCH_EMAIL: ${{ secrets.MONARCH_EMAIL }}
-          MONARCH_PASSWORD: ${{ secrets.MONARCH_PASSWORD }}
+          MONARCH_SESSION_B64: ${{ secrets.MONARCH_SESSION_B64 }}
           MONARCH_ACCOUNT_ID: ${{ secrets.MONARCH_ACCOUNT_ID }}
         run: |
           python sync_tcg_to_monarch.py
