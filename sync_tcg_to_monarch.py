@@ -10,11 +10,11 @@ from monarchmoney import MonarchMoney, MonarchMoneyEndpoints
 MonarchMoneyEndpoints.BASE_URL = "https://api.monarch.com"
 
 # Configuration
-TCGCOLLECTOR_USER = os.getenv("TCGCOLLECTOR_USER")
+TCGCOLLECTOR_USER_ID = os.getenv("TCGCOLLECTOR_USER_ID")
 MONARCH_SESSION_B64 = os.getenv("MONARCH_SESSION_B64")
 MONARCH_ACCOUNT_ID = os.getenv("MONARCH_ACCOUNT_ID")
 
-PUBLIC_TCG_URL = f"https://www.tcgcollector.com/dashboard/intl?viewUser={TCGCOLLECTOR_USER}"
+PUBLIC_TCG_URL = f"https://www.tcgcollector.com/dashboard/intl?viewUser={TCGCOLLECTOR_USER_ID}"
 
 
 def get_tcgcollector_portfolio_value(url: str) -> float:
