@@ -105,6 +105,7 @@ In your GitHub repository, navigate to **Settings → Secrets and variables → 
 
 | Secret Name | Value | Description |
 | --- | --- | --- |
+| `TCGCOLLECTOR_USER` | `12345` | User ID for TCG Collector Public Page
 | `MONARCH_SESSION_B64` | `gASV...` | The entire base64 string generated from `monarch_session.pickle` |
 | `MONARCH_ACCOUNT_ID` | `xxxxxxxx-xxxx-...` | Your manual Collectibles account UUID in Monarch |
 
@@ -144,6 +145,7 @@ jobs:
 
       - name: Run sync script
         env:
+	 	  TCGCOLLECTOR_USER: ${{ secrets.TCGCOLLECTOR_USER }}
           MONARCH_SESSION_B64: ${{ secrets.MONARCH_SESSION_B64 }}
           MONARCH_ACCOUNT_ID: ${{ secrets.MONARCH_ACCOUNT_ID }}
         run: |
