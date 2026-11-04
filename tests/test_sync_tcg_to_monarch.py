@@ -16,6 +16,9 @@ class PortfolioValueTests(unittest.TestCase):
 
 
 class BalanceValidationTests(unittest.TestCase):
+    def test_accepts_any_finite_change_without_limit(self):
+        validate_balance_change(0.0, 25000.0, None)
+
     def test_accepts_change_within_limit(self):
         validate_balance_change(1000.0, 1200.0, 200.0)
 

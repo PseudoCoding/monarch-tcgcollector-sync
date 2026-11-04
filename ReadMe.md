@@ -97,7 +97,7 @@ In your GitHub repository, navigate to **Settings → Secrets and variables → 
 | `MONARCH_SESSION_B64` | `gASV...` | The entire base64 string generated from `monarch_session.pickle` |
 | `MONARCH_ACCOUNT_ID` | `xxxxxxxx-xxxx-...` | Your manual Collectibles account UUID in Monarch |
 
-Also add the repository **variable** `MAX_BALANCE_CHANGE` with the largest dollar change you will allow between the current Monarch balance and the scraped value. Choose a conservative limit; the script stops without updating when the difference exceeds it. This variable is required, including for the first sync.
+Optionally add the repository **variable** `MAX_BALANCE_CHANGE` to limit the dollar difference allowed between the current Monarch balance and the scraped value. If unset or blank, the change limit is unlimited, which allows the first sync to set the account to any valid collection value. If set, choose a conservative limit; the script stops without updating when the difference exceeds it.
 
 ---
 
@@ -154,7 +154,7 @@ jobs:
 
 ```
 
-Manual workflow runs default to dry-run. Set `dry_run` to `false` only when ready to update Monarch. Scheduled runs update the account, subject to the configured balance-change limit.
+Manual workflow runs default to dry-run. Set `dry_run` to `false` only when ready to update Monarch. Scheduled runs update the account; if `MAX_BALANCE_CHANGE` is set, updates are subject to that limit.
 
 ---
 
@@ -163,4 +163,4 @@ Manual workflow runs default to dry-run. Set `dry_run` to `false` only when read
 * **`HTTP Code 405: Method Not Allowed`:** Ensure `MonarchMoneyEndpoints.BASE_URL = "[https://api.monarch.com](https://api.monarch.com)"` is defined before instantiating `MonarchMoney()`.
 * **`AttributeError: 'MonarchMoney' object has no attribute 'update_account_balance'`:** Use `mm.update_account(account_id=..., account_balance=...)` instead.
 * **Session Expiration:** If the Action fails with an authentication error, run `save_session.py` locally again and replace the `MONARCH_SESSION_B64` secret in GitHub.
-* **Balance-change limit:** If a legitimate change exceeds `MAX_BALANCE_CHANGE`, review the scraped value and current account balance before raising the repository variable.
+* **Balance-change limit:** If a legitimate change exceeds `MAX_BALANCE_CHANGE`, review the scraped value and current account balance before raising the repository variable. An unset or blank variable disables the limit.

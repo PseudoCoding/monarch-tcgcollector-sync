@@ -68,13 +68,19 @@ def get_tcgcollector_portfolio_value(url: str) -> float:
 
 
 def validate_balance_change(
-    current_balance: float, new_balance: float, max_balance_change: float
+    current_balance: float,
+    new_balance: float,
+    max_balance_change: Optional[float],
 ) -> None:
-    values = (current_balance, new_balance, max_balance_change)
+    values = (current_balance, new_balance)
     if not all(math.isfinite(value) for value in values):
-        raise ValueError("Balance values and MAX_BALANCE_CHANGE must be finite numbers.")
-    if current_balance < 0 or new_balance < 0 or max_balance_change < 0:
-        raise ValueError("Balances and MAX_BALANCE_CHANGE must not be negative.")
+        raise ValueError("Balance values must be finite numbers.")
+    if current_balance < 0 or new_balance < 0:
+        raise ValueError("Balances must not be negative.")
+    if max_balance_change is None:
+        return
+    if not math.isfinite(max_balance_change) or max_balance_change < 0:
+        raise ValueError("MAX_BALANCE_CHANGE must be a finite, non-negative number.")
     if abs(new_balance - current_balance) > max_balance_change:
         raise ValueError(
             "The scraped balance differs from the current Monarch balance by more "
@@ -94,7 +100,7 @@ def parse_dry_run(value: Optional[str]) -> bool:
 
 
 async def update_monarch_balance(
-    new_balance: float, max_balance_change: float, dry_run: bool
+    new_balance: float, max_balance_change: Optional[float], dry_run: bool
 ) -> None:
     mm = MonarchMoney()
 
@@ -141,7 +147,6 @@ async def main():
         "TCGCOLLECTOR_USER_ID": TCGCOLLECTOR_USER_ID,
         "MONARCH_SESSION_B64": MONARCH_SESSION_B64,
         "MONARCH_ACCOUNT_ID": MONARCH_ACCOUNT_ID,
-        "MAX_BALANCE_CHANGE": MAX_BALANCE_CHANGE,
     }
     missing_variables = [
         name for name, value in required_environment_variables.items() if not value
@@ -149,12 +154,14 @@ async def main():
     if missing_variables:
         raise ValueError("Missing required configuration: " + ", ".join(missing_variables))
 
-    try:
-        max_balance_change = float(MAX_BALANCE_CHANGE)
-    except (TypeError, ValueError) as error:
-        raise ValueError("MAX_BALANCE_CHANGE must be a non-negative number.") from error
-    if not math.isfinite(max_balance_change) or max_balance_change < 0:
-        raise ValueError("MAX_BALANCE_CHANGE must be a finite, non-negative number.")
+    max_balance_change = None
+    if MAX_BALANCE_CHANGE and MAX_BALANCE_CHANGE.strip():
+        try:
+            max_balance_change = float(MAX_BALANCE_CHANGE)
+        except ValueError as error:
+            raise ValueError("MAX_BALANCE_CHANGE must be a non-negative number.") from error
+        if not math.isfinite(max_balance_change) or max_balance_change < 0:
+            raise ValueError("MAX_BALANCE_CHANGE must be a finite, non-negative number.")
 
     dry_run = parse_dry_run(os.getenv("DRY_RUN"))
     portfolio_value = get_tcgcollector_portfolio_value(PUBLIC_TCG_URL)
