@@ -1,8 +1,11 @@
 import asyncio
 import base64
+import math
 import os
 import re
 import requests
+import tempfile
+from typing import Optional
 from bs4 import BeautifulSoup
 from monarchmoney import MonarchMoney, MonarchMoneyEndpoints
 
@@ -13,6 +16,7 @@ MonarchMoneyEndpoints.BASE_URL = "https://api.monarch.com"
 TCGCOLLECTOR_USER_ID = os.getenv("TCGCOLLECTOR_USER_ID")
 MONARCH_SESSION_B64 = os.getenv("MONARCH_SESSION_B64")
 MONARCH_ACCOUNT_ID = os.getenv("MONARCH_ACCOUNT_ID")
+MAX_BALANCE_CHANGE = os.getenv("MAX_BALANCE_CHANGE")
 
 PUBLIC_TCG_URL = f"https://www.tcgcollector.com/dashboard/intl?viewUser={TCGCOLLECTOR_USER_ID}"
 
@@ -63,25 +67,73 @@ def get_tcgcollector_portfolio_value(url: str) -> float:
     return portfolio_value
 
 
-async def update_monarch_balance(new_balance: float):
+def validate_balance_change(
+    current_balance: float, new_balance: float, max_balance_change: float
+) -> None:
+    values = (current_balance, new_balance, max_balance_change)
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError("Balance values and MAX_BALANCE_CHANGE must be finite numbers.")
+    if current_balance < 0 or new_balance < 0 or max_balance_change < 0:
+        raise ValueError("Balances and MAX_BALANCE_CHANGE must not be negative.")
+    if abs(new_balance - current_balance) > max_balance_change:
+        raise ValueError(
+            "The scraped balance differs from the current Monarch balance by more "
+            "than MAX_BALANCE_CHANGE; no update was made."
+        )
+
+
+def parse_dry_run(value: Optional[str]) -> bool:
+    if value is None:
+        return True
+    normalized_value = value.strip().lower()
+    if normalized_value in {"1", "true", "yes"}:
+        return True
+    if normalized_value in {"0", "false", "no"}:
+        return False
+    raise ValueError("DRY_RUN must be set to true or false.")
+
+
+async def update_monarch_balance(
+    new_balance: float, max_balance_change: float, dry_run: bool
+) -> None:
     mm = MonarchMoney()
 
-    # Reconstitute and load saved session file
-    session_bytes = base64.b64decode(MONARCH_SESSION_B64)
-    with open("temp_session.pickle", "wb") as f:
-        f.write(session_bytes)
+    session_path = None
+    try:
+        session_bytes = base64.b64decode(
+            "".join(MONARCH_SESSION_B64.split()), validate=True
+        )
+        with tempfile.NamedTemporaryFile(suffix=".pickle", delete=False) as session_file:
+            session_path = session_file.name
+            session_file.write(session_bytes)
+        mm.load_session(session_path)
+    finally:
+        if session_path and os.path.exists(session_path):
+            os.remove(session_path)
 
-    mm.load_session("temp_session.pickle")
+    accounts_response = await mm.get_accounts()
+    accounts = accounts_response.get("accounts")
+    if not isinstance(accounts, list):
+        raise ValueError("Could not read Monarch accounts; no balance update was made.")
 
-    if os.path.exists("temp_session.pickle"):
-        os.remove("temp_session.pickle")
+    account = next(
+        (item for item in accounts if item.get("id") == MONARCH_ACCOUNT_ID), None
+    )
+    if account is None:
+        raise ValueError("The configured Monarch account was not found.")
+
+    current_balance = float(account["currentBalance"])
+    validate_balance_change(current_balance, new_balance, max_balance_change)
+
+    if dry_run:
+        print("Dry run passed; no Monarch account was updated.")
+        return
 
     await mm.update_account(
-		account_id=MONARCH_ACCOUNT_ID,
-		account_balance=new_balance
-	)
-    
-    print(f"Successfully updated Monarch account {MONARCH_ACCOUNT_ID} to ${new_balance:,.2f}")
+        account_id=MONARCH_ACCOUNT_ID,
+        account_balance=new_balance,
+    )
+    print("Monarch account balance updated successfully.")
 
 
 async def main():
@@ -89,18 +141,26 @@ async def main():
         "TCGCOLLECTOR_USER_ID": TCGCOLLECTOR_USER_ID,
         "MONARCH_SESSION_B64": MONARCH_SESSION_B64,
         "MONARCH_ACCOUNT_ID": MONARCH_ACCOUNT_ID,
+        "MAX_BALANCE_CHANGE": MAX_BALANCE_CHANGE,
     }
     missing_variables = [
         name for name, value in required_environment_variables.items() if not value
     ]
     if missing_variables:
-        raise ValueError(
-            f"Missing required environment variables: {', '.join(missing_variables)}"
-        )
+        raise ValueError("Missing required configuration: " + ", ".join(missing_variables))
 
-    val = get_tcgcollector_portfolio_value(PUBLIC_TCG_URL)
-    print(f"Found TCG Collector valuation: ${val:,.2f}")
-    await update_monarch_balance(val)
+    try:
+        max_balance_change = float(MAX_BALANCE_CHANGE)
+    except (TypeError, ValueError) as error:
+        raise ValueError("MAX_BALANCE_CHANGE must be a non-negative number.") from error
+    if not math.isfinite(max_balance_change) or max_balance_change < 0:
+        raise ValueError("MAX_BALANCE_CHANGE must be a finite, non-negative number.")
+
+    dry_run = parse_dry_run(os.getenv("DRY_RUN"))
+    portfolio_value = get_tcgcollector_portfolio_value(PUBLIC_TCG_URL)
+    if not math.isfinite(portfolio_value) or portfolio_value < 0:
+        raise ValueError("The scraped collection value is invalid; no update was made.")
+    await update_monarch_balance(portfolio_value, max_balance_change, dry_run)
 
 
 if __name__ == "__main__":
